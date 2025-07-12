@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Status {
+  TO_DO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum BoardVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// MODELS
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+
+  workspaces Membership[] // A user can be a member of many workspaces
+  privateBoards BoardMember[]
+
+  createdCards  Card[]       @relation("CreatedCards")
+  assignedCards Card[]       @relation("AssignedCards")
+
+  comments  Comment[]
+
+  passwordResetToken       PasswordResetToken[]
+  emailVerificationTokens  EmailVerificationToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Workspace {
+  id      String   @id @default(uuid())
+  name    String
+
+  members Membership[] // A workspace has many members
+  invites Invite[]
+
+  boards  Board[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// This is a "join table" to manage the many-to-many relationship
+// between User and Workspace, and to store the user's role.
+model Membership {
+  id          String   @id @default(uuid())
+  role        Role     @default(MEMBER)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, workspaceId]) // A user can only join a workspace once
+}
+
+model Board {
+  id          String        @id @default(uuid())
+  name        String
+  visibility   BoardVisibility @default(PUBLIC) 
+
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  lists       List[]
+
+  activityLogs ActivityLog[]
+
+  members      BoardMember[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([workspaceId])
+}
+
+
+model BoardMember {
+  id     String @id @default(uuid())
+
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([boardId, userId]) // A user can only be a member of a board once
+  @@index([boardId])
+  @@index([userId])
+}
+
+model List {
+  id      String   @id @default(uuid())
+  name    String
+  position Int // To manage the order of lists on a board
+
+  boardId String
+  board   Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  cards   Card[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+}
+
+model Card {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  position    Int // To manage the order of cards in a list
+  status      Status    @default(TO_DO) 
+
+  listId      String
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  creatorId   String
+  creator     User      @relation("CreatedCards", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  assigneeId  String?
+  assignee    User?     @relation("AssignedCards", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  comments    Comment[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([listId])
+  @@index([assigneeId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([authorId])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String 
+  details   Json 
+
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([boardId])
+}
+
+model Invite {
+  id          String    @id @default(uuid())
+  email       String
+  role        Role
+
+  token       String    @unique
+  expiresAt   DateTime
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+
+  token     String   @unique
+  expiresAt DateTime
+
+  userId    String   
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+   @@index([userId]) 
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  
+  token     String   @unique
+  expiresAt DateTime
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId]) 
+}
