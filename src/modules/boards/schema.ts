@@ -14,3 +14,4 @@ export const addBoardMemberSchema = z
   .strict()
 
 export type BoardData = z.infer<typeof boardSchema>
+export type AddBoardMemberData = z.infer<typeof addBoardMemberSchema>

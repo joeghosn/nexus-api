@@ -1,9 +1,9 @@
 import { Router } from 'express'
-import * as userController from './user.controller'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
 import { changePasswordSchema } from './schema'
 import validate from '@/middleware/validate.middleware'
+import { changePasswordController } from './controller'
 
 const router = Router()
 
@@ -16,7 +16,7 @@ router.use(authMiddleware)
 router.post(
   '/change-password',
   validate.body(changePasswordSchema),
-  userController.changePassword,
+  changePasswordController,
 )
 
 export default router

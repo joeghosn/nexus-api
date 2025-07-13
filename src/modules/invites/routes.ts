@@ -1,16 +1,21 @@
 import { Router } from 'express'
-import * as inviteController from './invite.controller'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
-import validate from '@/middleware/validate.middleware'
 import { acceptInviteSchema } from './schema'
+import validate from '@/middleware/validate.middleware'
+import {
+  acceptInviteController,
+  verifyInviteTokenController,
+} from './controllers'
 
 const router = Router()
+
+// --- Public Invitation Routes ---
 
 // @route   GET /api/invites/verify/:token
 // @desc    Check if an invite token is valid before user logs in/registers
 // @access  Public
-router.get('/verify/:token', inviteController.verifyInviteToken)
+router.get('/verify/:token', verifyInviteTokenController)
 
 // @route   POST /api/invites/accept
 // @desc    Accept an invitation and join a workspace. User must be logged in.
@@ -19,7 +24,7 @@ router.post(
   '/accept',
   authMiddleware,
   validate.body(acceptInviteSchema),
-  inviteController.acceptInvite,
+  acceptInviteController,
 )
 
 export default router

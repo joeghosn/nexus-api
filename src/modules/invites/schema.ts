@@ -5,3 +5,5 @@ export const acceptInviteSchema = z
     token: z.string(),
   })
   .strict()
+
+export type AcceptInviteData = z.infer<typeof acceptInviteSchema>

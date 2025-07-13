@@ -10,6 +10,10 @@ import errorHandler from '@/middleware/error.middleware'
 
 import authRoutes from '@/modules/auth/routes'
 import workspaceRoutes from '@/modules/workspaces/routes'
+import boardRoutes from '@/modules/boards/routes'
+import memberRoutes from '@/modules/members/routes'
+import userRoutes from '@/modules/users/routes'
+
 // import { metaRoutes } from '@/modules/meta'
 
 const app = express()
@@ -80,7 +84,10 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
 app.use('/api/workspaces', workspaceRoutes)
+workspaceRoutes.use('/:workspaceId/members', memberRoutes)
+workspaceRoutes.use('/:workspaceId/boards', boardRoutes)
 // app.use('/api/meta', metaRoutes)
 
 app.use(errorHandler)

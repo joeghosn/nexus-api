@@ -54,7 +54,6 @@ export const getUserWorkspaces = async (userId: string) => {
         },
       },
     },
-
     include: {
       members: {
         where: {

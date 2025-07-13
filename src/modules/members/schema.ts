@@ -14,4 +14,4 @@ export const updateMemberRoleSchema = z
   .strict()
 
 export type CreateInviteData = z.infer<typeof createInviteSchema>
-export type UpdateMemberRoleSchema = z.infer<typeof updateMemberRoleSchema>
+export type UpdateMemberRoleData = z.infer<typeof updateMemberRoleSchema>

@@ -1,59 +1,93 @@
 import { Router } from 'express'
-import * as boardController from './board.controller'
 
-import { boardSchema } from './schema'
 import { authMiddleware } from '@/middleware/auth.middleware'
+import { hasWorkspaceRole } from '@/middleware/authorization.middleware'
+
 import validate from '@/middleware/validate.middleware'
+import { addBoardMemberSchema, boardSchema } from './schema'
+import {
+  addMemberToBoardController,
+  createBoardController,
+  deleteBoardController,
+  getBoardByIdController,
+  getBoardsInWorkspaceController,
+  removeMemberFromBoardController,
+  updateBoardController,
+} from './controllers'
 
 const router = Router({ mergeParams: true })
 
-// All routes in this file will be protected by the authMiddleware
+// All routes in this file require the user to be authenticated
 router.use(authMiddleware)
 
+// --- Core Board Routes ---
+
 // @route   POST /api/workspaces/:workspaceId/boards
-// @desc    Create a new board within a workspace
-// @access  Authenticated
-router.post('/', validate.body(boardSchema), boardController.createBoard)
+// @desc    Create a new board
+// @access  Authenticated (Admin or Owner)
+router.post(
+  '/',
+  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.body(boardSchema),
+  createBoardController,
+)
 
 // @route   GET /api/workspaces/:workspaceId/boards
-// @desc    Get all boards for a specific workspace
-// @access  Authenticated
-router.get('/', boardController.getBoardsInWorkspace)
+// @desc    Get all boards in a workspace
+// @access  Authenticated (Any Member)
+router.get(
+  '/',
+  hasWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER']),
+  getBoardsInWorkspaceController,
+)
 
 // @route   GET /api/workspaces/:workspaceId/boards/:boardId
-// @desc    Get a single board by its ID
-// @access  Authenticated
-router.get('/:boardId', boardController.getBoardById)
+// @desc    Get a single board by ID
+// @access  Authenticated (Any Member with access)
+router.get(
+  '/:boardId',
+  hasWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER']),
+  getBoardByIdController,
+)
 
 // @route   PATCH /api/workspaces/:workspaceId/boards/:boardId
-// @desc    Update a board's name
-// @access  Authenticated
+// @desc    Update a board's details
+// @access  Authenticated (Admin or Owner)
 router.patch(
   '/:boardId',
+  hasWorkspaceRole(['OWNER', 'ADMIN']),
   validate.body(boardSchema),
-  boardController.updateBoard,
+  updateBoardController,
 )
 
 // @route   DELETE /api/workspaces/:workspaceId/boards/:boardId
 // @desc    Delete a board
-// @access  Authenticated
-router.delete('/:boardId', boardController.deleteBoard)
+// @access  Authenticated (Admin or Owner)
+router.delete(
+  '/:boardId',
+  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  deleteBoardController,
+)
+
+// --- Private Board Member Management Routes ---
 
 // @route   POST /api/workspaces/:workspaceId/boards/:boardId/members
 // @desc    Add a workspace member to a private board
-// @access  Authenticated (Admin/Owner)
+// @access  Authenticated (Admin or Owner)
 router.post(
   '/:boardId/members',
+  hasWorkspaceRole(['OWNER', 'ADMIN']),
   validate.body(addBoardMemberSchema),
-  boardMemberController.addMemberToBoard,
+  addMemberToBoardController,
 )
 
 // @route   DELETE /api/workspaces/:workspaceId/boards/:boardId/members/:userId
 // @desc    Remove a member's access from a private board
-// @access  Authenticated (Admin/Owner)
+// @access  Authenticated (Admin or Owner)
 router.delete(
   '/:boardId/members/:userId',
-  boardMemberController.removeMemberFromBoard,
+  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  removeMemberFromBoardController,
 )
 
 export default router
