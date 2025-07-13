@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser'
 import errorHandler from '@/middleware/error.middleware'
 
 import authRoutes from '@/modules/auth/routes'
+import workspaceRoutes from '@/modules/workspaces/routes'
 // import { metaRoutes } from '@/modules/meta'
 
 const app = express()
@@ -79,6 +80,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes)
+app.use('/api/workspaces', workspaceRoutes)
 // app.use('/api/meta', metaRoutes)
 
 app.use(errorHandler)

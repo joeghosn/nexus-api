@@ -7,3 +7,5 @@ export const workspaceSchema = z
       .min(3, { message: 'Workspace name must be at least 3 characters' }),
   })
   .strict()
+
+export type WorkspaceData = z.infer<typeof workspaceSchema>

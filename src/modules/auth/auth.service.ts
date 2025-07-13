@@ -52,6 +52,9 @@ const generateAuthTokens = async (user: User): Promise<LoginResponse> => {
  * @param user The user object.
  */
 const _sendVerificationEmailForUser = async (user: User): Promise<void> => {
+  if (user.emailVerified) {
+    throw new ConflictException('User email is already verified.')
+  }
   const token = generateAlphanumericOtp()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // Expires in 10 minutes
 
@@ -74,6 +77,7 @@ const _sendVerificationEmailForUser = async (user: User): Promise<void> => {
  */
 export const sendVerificationEmail = async (email: string): Promise<void> => {
   const user = await prisma.user.findUnique({ where: { email } })
+  console.log('Reached', user)
 
   // We only send if the user exists and is not yet verified.
   if (user && !user.emailVerified) {
@@ -130,8 +134,6 @@ export const login = async (loginData: LoginData): Promise<LoginResponse> => {
     await _sendVerificationEmailForUser(user)
   }
 
-  console.log('reached')
-
   return generateAuthTokens(user)
 }
 
@@ -157,6 +159,8 @@ export const forgotPassword = async (email: string): Promise<void> => {
       expiresAt,
     },
   })
+
+  console.log(token)
 
   // Here you would call a service to send the password reset email with the unhashed token
   // For example: await emailService.sendPasswordResetEmail(user, token);
@@ -231,7 +235,6 @@ export const verifyEmail = async (
       where: { userId: user.id },
     }),
   ])
-  console.log('Reached')
 
   return generateAuthTokens(user)
 }
