@@ -21,7 +21,7 @@ const errorHandler = (
   })
 
   if (err instanceof HttpException) {
-    statusCode = err.statusCode
+    statusCode = err.code
     status = err.status
     message = err.message
   }

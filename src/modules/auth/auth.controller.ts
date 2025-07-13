@@ -7,7 +7,6 @@ import {
   ResendVerificationData,
   VerifyEmailData,
 } from './schema'
-import { AuthService } from './auth.service'
 
 /**
  * @desc    Register a new user
@@ -16,14 +15,22 @@ import { AuthService } from './auth.service'
  */
 import { Request, Response } from 'express'
 import { config } from '@/config'
+import {
+  forgotPassword,
+  getMe,
+  login,
+  register,
+  resetPassword,
+  sendVerificationEmail,
+  verifyEmail,
+} from './auth.service'
 
 export const registerController = asyncHandler(
   async (req: Request, res: Response) => {
     const { name, email, password } = req.body as RegisterData
 
-    await AuthService.register({ name, email, password })
+    await register({ name, email, password })
 
-    // Send a successful response
     res.status(201).json({
       status: 'success',
       statusCode: 201,
@@ -46,7 +53,7 @@ export const loginController = asyncHandler(
   async (req: Request, res: Response) => {
     const loginData = req.body as LoginData
 
-    const result = await authService.login(loginData)
+    const result = await login(loginData)
 
     // Get cookie settings based on the environment
     const cookieSettings = config.cookies.getSettings(config.isProduction())
@@ -78,7 +85,7 @@ export const forgotPasswordController = asyncHandler(
   async (req: Request, res: Response) => {
     const { email } = req.body as ForgotPasswordData
 
-    await authService.forgotPassword(email)
+    await forgotPassword(email)
 
     res.status(200).json({
       status: 'success',
@@ -100,7 +107,7 @@ export const resetPasswordController = asyncHandler(
   async (req: Request, res: Response) => {
     const resetData = req.body as ResetPasswordData
 
-    await authService.resetPassword(resetData)
+    await resetPassword(resetData)
 
     res.status(200).json({
       status: 'success',
@@ -116,11 +123,11 @@ export const resetPasswordController = asyncHandler(
  * @route   POST /api/auth/send-verification-email
  * @access  Public
  */
-export const resendVerificationController = asyncHandler(
+export const sendVerificationController = asyncHandler(
   async (req: Request, res: Response) => {
     const { email } = req.body as ResendVerificationData
 
-    await authService.sendVerificationEmail(email)
+    await sendVerificationEmail(email)
 
     res.status(200).json({
       status: 'success',
@@ -138,30 +145,32 @@ export const resendVerificationController = asyncHandler(
  * @route   POST /api/auth/verify-email
  * @access  Public
  */
-export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-  const verifyData: VerifyEmailData = req.body
+export const verifyEmailController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const verifyData: VerifyEmailData = req.body
 
-  const result = await authService.verifyEmail(verifyData)
+    const result = await verifyEmail(verifyData)
 
-  // Get cookie settings based on the environment
-  const cookieSettings = config.cookies.getSettings(config.isProduction())
+    // Get cookie settings based on the environment
+    const cookieSettings = config.cookies.getSettings(config.isProduction())
 
-  // Set the refresh token in a secure, httpOnly cookie
-  res.cookie('refreshToken', result.refreshToken, {
-    ...cookieSettings,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  })
+    // Set the refresh token in a secure, httpOnly cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      ...cookieSettings,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
 
-  // Send the access token in the response body
-  res.status(200).json({
-    status: 'success',
-    statusCode: 200,
-    message: 'Email has been verified successfully. You are now logged in.',
-    data: {
-      accessToken: result.accessToken,
-    },
-  })
-})
+    // Send the access token in the response body
+    res.status(200).json({
+      status: 'success',
+      statusCode: 200,
+      message: 'Email has been verified successfully. You are now logged in.',
+      data: {
+        accessToken: result.accessToken,
+      },
+    })
+  },
+)
 
 /**
  * @desc    Get the profile of the currently logged-in user
@@ -172,9 +181,9 @@ export const meController = asyncHandler(
   async (req: Request, res: Response) => {
     // The authMiddleware will add the user payload to the request object.
     // It adds `req.user` which contains the user's ID.
-    const userId = req.user.id
+    const userId = req.user?.id
 
-    const user = await authService.getMe(userId)
+    const user = await getMe(userId!)
 
     res.status(200).json({
       status: 'success',

@@ -6,11 +6,10 @@ import helmet from 'helmet'
 import compression from 'compression'
 import cookieParser from 'cookie-parser'
 
-import trimStrings from '@/middleware/trim-strings.middleware'
 import errorHandler from '@/middleware/error.middleware'
 
-import { authRoutes } from '@/modules/auth'
-import { metaRoutes } from '@/modules/meta'
+import authRoutes from '@/modules/auth/routes'
+// import { metaRoutes } from '@/modules/meta'
 
 const app = express()
 const PORT = config.port
@@ -54,7 +53,7 @@ app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-app.use(trimStrings([]))
+// app.use(trimStrings([]))
 
 // Health endpoint with cache
 app.get('/health', (req, res) => {
@@ -80,7 +79,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes)
-app.use('/api/meta', metaRoutes)
+// app.use('/api/meta', metaRoutes)
 
 app.use(errorHandler)
 

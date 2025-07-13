@@ -1,77 +1,56 @@
 import { NextFunction, Request, Response } from 'express'
-import { jwtUtils } from '../lib/auth/jwt.util'
-import { UnauthorizedException } from '../exceptions/unauthorized.exception'
+import { jwtUtils } from '@/lib/auth/jwt.util'
+import { UnauthorizedException } from '@/exceptions/unauthorized.exception'
+import { AccessTokenPayload } from '@/types/auth.types'
 
+// This extends the global Express Request interface
 declare global {
   namespace Express {
     interface Request {
-      user?: 
+      user?: AccessTokenPayload
     }
   }
 }
 
-const extractToken = (req: Request): string | null => {
-  // First, check httpOnly cookies (desktop browsers)
-  if (req.cookies && req.cookies.accessToken) {
-    return req.cookies.accessToken
-  }
-
-  // Fallback to Authorization header (mobile apps, browsers without cookie support)
+/**
+ * Extracts the JWT Access Token from the Authorization header.
+ * @param req The Express request object.
+ * @returns The token string or null if not found.
+ */
+const extractTokenFromHeader = (req: Request): string | null => {
   const authHeader = req.headers.authorization
   if (authHeader && authHeader.startsWith('Bearer ')) {
+    // Return the token part after "Bearer "
     return authHeader.substring(7)
   }
-
   return null
 }
 
-export const authMiddleware = async (
+/**
+ * Middleware to verify JWT and attach user payload to the request.
+ * It only handles AUTHENTICATION, not authorization.
+ */
+export const authMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+): void => {
   try {
-    const token = extractToken(req)
+    const token = extractTokenFromHeader(req)
 
     if (!token) {
-      throw new UnauthorizedException('Authentication required')
+      throw new UnauthorizedException(
+        'Authentication required. No token provided.',
+      )
     }
 
-    // Verify the token
+    // Verify the token and get the payload
     const payload = jwtUtils.verifyAccessToken(token)
 
-    // Check if user has admin role
-    if (payload.role !== 'admin') {
-      throw new UnauthorizedException('Admin access required')
-    }
-
-    // Attach user info from token to request
-    req.user = {
-      id: payload.userId,
-      email: payload.email,
-      role: payload.role,
-    }
+    req.user = payload
 
     next()
   } catch (error) {
-    if (error instanceof UnauthorizedException) {
-      return next(error)
-    }
-
-    if (error instanceof Error) {
-      if (error.name === 'TokenExpiredError') {
-        return next(new UnauthorizedException('Token has expired'))
-      }
-
-      if (error.name === 'JsonWebTokenError') {
-        return next(new UnauthorizedException('Invalid token'))
-      }
-
-      if (error.name === 'NotBeforeError') {
-        return next(new UnauthorizedException('Token not active yet'))
-      }
-    }
-
-    next(new UnauthorizedException('Authentication failed'))
+    next(error)
   }
 }

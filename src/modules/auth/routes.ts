@@ -16,9 +16,9 @@ import {
   logoutController,
   registerController,
   resetPasswordController,
-  resendVerificationController,
-  verifyEmailController,
+  sendVerificationController,
   meController,
+  verifyEmailController,
 } from './auth.controller'
 
 const router = Router()
@@ -59,7 +59,7 @@ router.post(
 router.post(
   '/resend-verification',
   validate.body(resendVerificationSchema),
-  resendVerificationController,
+  sendVerificationController,
 )
 
 router.post('/logout', authMiddleware, logoutController)

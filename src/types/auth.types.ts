@@ -1,8 +1,22 @@
-export interface User {}
+import { Role } from '@prisma/client'
 
-export interface RegisterResponse {}
-export interface LoginResponse {}
+export interface LoginResponse {
+  accessToken: string
+  refreshToken: string
+}
 
-export interface AccessTokenPayload {}
+export type MembershipPayload = {
+  workspaceId: string
+  role: Role
+}
 
-export interface RefreshTokenPayload {}
+export interface AccessTokenPayload {
+  id: string
+  name: string
+  emailVerified: boolean
+  memberships: MembershipPayload[]
+}
+
+export interface RefreshTokenPayload {
+  id: string
+}
