@@ -1,7 +1,7 @@
 import { Router } from 'express'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
-import { hasWorkspaceRole } from '@/middleware/authorization.middleware'
+import { hasWorkspaceRole } from '@/middleware/validate-workspace-access'
 
 import validate from '@/middleware/validate.middleware'
 import { addBoardMemberSchema, boardSchema } from './schema'

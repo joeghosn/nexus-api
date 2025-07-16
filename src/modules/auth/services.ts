@@ -6,7 +6,11 @@ import { UnauthorizedException } from '@/exceptions/unauthorized.exception'
 import { ConflictException } from '@/exceptions/conflict.exception'
 import { NotFoundException } from '@/exceptions/not-found.exception'
 
-import { AccessTokenPayload, LoginResponse } from '@/types/auth.types'
+import {
+  AccessTokenPayload,
+  LoginResponse,
+  LoginResult,
+} from '@/types/auth.types'
 import {
   LoginData,
   RegisterData,
@@ -77,11 +81,12 @@ const _sendVerificationEmailForUser = async (user: User): Promise<void> => {
  */
 export const sendVerificationEmail = async (email: string): Promise<void> => {
   const user = await prisma.user.findUnique({ where: { email } })
-  console.log('Reached', user)
 
   // We only send if the user exists and is not yet verified.
   if (user && !user.emailVerified) {
     await _sendVerificationEmailForUser(user)
+  } else {
+    throw new ConflictException('User email is already verified')
   }
 }
 
@@ -114,9 +119,9 @@ export const register = async (registerData: RegisterData): Promise<void> => {
 /**
  * Handles user login.
  * @param loginData The user's login credentials.
- * @returns An object with access and refresh tokens.
+ * @returns An object with access and refresh tokens, or user data if verification required.
  */
-export const login = async (loginData: LoginData): Promise<LoginResponse> => {
+export const login = async (loginData: LoginData): Promise<LoginResult> => {
   const { email, password } = loginData
 
   const user = await prisma.user.findUnique({ where: { email } })
@@ -132,6 +137,7 @@ export const login = async (loginData: LoginData): Promise<LoginResponse> => {
 
   if (!user.emailVerified) {
     await _sendVerificationEmailForUser(user)
+    return { requiresVerification: true }
   }
 
   return generateAuthTokens(user)

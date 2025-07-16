@@ -18,8 +18,7 @@ import {
  */
 export const createWorkspaceController = asyncHandler(
   async (req: Request, res: Response) => {
-    // We know the user exists because the authMiddleware ran successfully
-    const user = req.user as AccessTokenPayload
+    const user = req.user!
     const workspaceData: WorkspaceData = req.body
 
     const newWorkspace = await createWorkspace(workspaceData, user.id)
@@ -40,7 +39,7 @@ export const createWorkspaceController = asyncHandler(
  */
 export const getUserWorkspacesController = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = req.user as AccessTokenPayload
+    const user = req.user!
 
     const workspaces = await getUserWorkspaces(user.id)
 
@@ -62,7 +61,7 @@ export const getWorkspaceByIdController = asyncHandler(
   async (req: Request, res: Response) => {
     const { workspaceId } = req.params
 
-    // Authorization is handled by the hasWorkspaceRole middleware,
+    // Authorization is handled by the vaildateWorkspaceAccess middleware,
     // so we can proceed directly to the service call.
     const workspace = await getWorkspaceById(workspaceId)
 
@@ -85,7 +84,6 @@ export const updateWorkspaceController = asyncHandler(
     const { workspaceId } = req.params
     const workspaceData: WorkspaceData = req.body
 
-    // Authorization is handled by the hasWorkspaceRole middleware.
     const updatedWorkspace = await updateWorkspace(workspaceId, workspaceData)
 
     res.status(200).json({
@@ -106,7 +104,6 @@ export const deleteWorkspaceController = asyncHandler(
   async (req: Request, res: Response) => {
     const { workspaceId } = req.params
 
-    // Authorization is handled by the hasWorkspaceRole middleware.
     await deleteWorkspace(workspaceId)
 
     res.status(200).json({

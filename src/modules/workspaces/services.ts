@@ -97,15 +97,6 @@ export const updateWorkspace = async (
   workspaceId: string,
   workspaceData: WorkspaceData,
 ) => {
-  // Step 1: Ensure the workspace exists before attempting to update.
-  const existingWorkspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-  })
-
-  if (!existingWorkspace) {
-    throw new NotFoundException('Workspace not found.')
-  }
-
   // Step 2: Proceed with the update.
   const updatedWorkspace = await prisma.workspace.update({
     where: { id: workspaceId },
@@ -122,15 +113,6 @@ export const updateWorkspace = async (
  * @param workspaceId The ID of the workspace to delete.
  */
 export const deleteWorkspace = async (workspaceId: string) => {
-  // Step 1: Ensure the workspace exists before attempting to delete.
-  const existingWorkspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-  })
-
-  if (!existingWorkspace) {
-    throw new NotFoundException('Workspace not found.')
-  }
-
   await prisma.workspace.delete({
     where: { id: workspaceId },
   })

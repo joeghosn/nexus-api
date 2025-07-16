@@ -23,7 +23,7 @@ import {
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
-} from './auth.service'
+} from './services'
 
 export const registerController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -37,8 +37,8 @@ export const registerController = asyncHandler(
       message:
         'Registration successful. Please check your email to verify your account.',
       data: {
-        email,
         name,
+        email,
       },
     })
   },
@@ -51,10 +51,24 @@ export const registerController = asyncHandler(
  */
 export const loginController = asyncHandler(
   async (req: Request, res: Response) => {
-    const loginData = req.body as LoginData
+    const { email, password }: LoginData = req.body
 
-    const result = await login(loginData)
+    const result = await login({ email, password })
 
+    // Check if user requires email verification
+    if ('requiresVerification' in result) {
+      return res.status(200).json({
+        status: 'success',
+        statusCode: 200,
+        message:
+          'Please check your email and verify your account before logging in. A new verification code has been sent.',
+        data: {
+          email: email,
+        },
+      })
+    }
+
+    // User is verified, proceed with setting tokens
     // Get cookie settings based on the environment
     const cookieSettings = config.cookies.getSettings(config.isProduction())
 
@@ -147,7 +161,7 @@ export const sendVerificationController = asyncHandler(
  */
 export const verifyEmailController = asyncHandler(
   async (req: Request, res: Response) => {
-    const verifyData: VerifyEmailData = req.body
+    const verifyData = req.body as VerifyEmailData
 
     const result = await verifyEmail(verifyData)
 
@@ -181,15 +195,15 @@ export const meController = asyncHandler(
   async (req: Request, res: Response) => {
     // The authMiddleware will add the user payload to the request object.
     // It adds `req.user` which contains the user's ID.
-    const userId = req.user?.id
+    const user = req.user!
 
-    const user = await getMe(userId!)
+    const me = await getMe(user.id)
 
     res.status(200).json({
       status: 'success',
       statusCode: 200,
       message: 'User profile fetched successfully',
-      data: user,
+      data: me,
     })
   },
 )

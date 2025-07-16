@@ -24,6 +24,7 @@ export const inviteMember = async (
       user: { email },
     },
   })
+
   if (existingMembership) {
     throw new ConflictException(
       'This user is already a member of the workspace.',
@@ -38,6 +39,7 @@ export const inviteMember = async (
       expiresAt: { gte: new Date() },
     },
   })
+
   if (existingInvite) {
     throw new ConflictException(
       'An active invitation for this email already exists.',
@@ -57,6 +59,8 @@ export const inviteMember = async (
       expiresAt,
     },
   })
+
+  console.log('Invite token:', token)
 
   // Here you would call a real email service to send the invite link
   // e.g., await emailService.sendWorkspaceInvite(email, token, workspaceName);

@@ -19,7 +19,7 @@ import {
   sendVerificationController,
   meController,
   verifyEmailController,
-} from './auth.controller'
+} from './controllers'
 
 const router = Router()
 
@@ -57,7 +57,7 @@ router.post(
 // @desc    Resend the email verification link to the logged-in user
 // @access  Authenticated
 router.post(
-  '/resend-verification',
+  '/send-verification',
   validate.body(resendVerificationSchema),
   sendVerificationController,
 )

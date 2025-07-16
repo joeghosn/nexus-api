@@ -14,7 +14,7 @@ import { changePassword } from './services'
 export const changePasswordController = asyncHandler(
   async (req: Request, res: Response) => {
     // The authMiddleware has already run, so we know req.user exists.
-    const user = req.user as AccessTokenPayload
+    const user = req.user!
     const passwordData: ChangePasswordData = req.body
 
     // Pass the user's ID and the password data to the service layer

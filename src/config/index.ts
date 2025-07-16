@@ -11,12 +11,8 @@ export const config = {
 
   // Database Configuration
   database: {
-    url:
-      process.env.DATABASE_URL ||
-      '',
+    url: process.env.DATABASE_URL || '',
   },
-
-
 
   // Security Configuration
   cors: {
@@ -47,7 +43,6 @@ export const config = {
     secret: process.env.JWT_SECRET || '',
     refreshSecret: process.env.JWT_REFRESH_SECRET || '',
   },
-
 
   isDevelopment: () => environment === 'development',
   isProduction: () => environment === 'production',
