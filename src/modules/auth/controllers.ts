@@ -19,11 +19,13 @@ import {
   forgotPassword,
   getMe,
   login,
+  refreshToken,
   register,
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
 } from './services'
+import { BadRequestException } from '@/exceptions'
 
 export const registerController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -83,6 +85,39 @@ export const loginController = asyncHandler(
       status: 'success',
       statusCode: 200,
       message: 'Login successful',
+      data: {
+        accessToken: result.accessToken,
+      },
+    })
+  },
+)
+
+/**
+ * @desc    Get a new access token using a refresh token
+ * @route   POST /api/auth/refresh
+ * @access  Public (via cookie)
+ */
+export const refreshController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const token = req.cookies.refreshToken
+
+    if (!token) {
+      throw new BadRequestException('Refresh token is required.')
+    }
+
+    const result = await refreshToken(token)
+
+    const cookieSettings = config.cookies.getSettings(config.isProduction())
+
+    res.cookie('refreshToken', result.refreshToken, {
+      ...cookieSettings,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
+
+    res.status(200).json({
+      status: 'success',
+      statusCode: 200,
+      message: 'Token refreshed successfully',
       data: {
         accessToken: result.accessToken,
       },

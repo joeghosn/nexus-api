@@ -144,6 +144,28 @@ export const login = async (loginData: LoginData): Promise<LoginResult> => {
 }
 
 /**
+ * Generates a new pair of tokens from a valid refresh token.
+ * @param token The incoming refresh token from the cookie.
+ * @returns A new accessToken and refreshToken.
+ */
+export const refreshToken = async (token: string): Promise<LoginResponse> => {
+  // 1. Verify the refresh token
+  const payload = jwtUtils.verifyRefreshToken(token)
+
+  // 2. Check if the user still exists
+  const user = await prisma.user.findUnique({
+    where: { id: payload.id },
+  })
+
+  if (!user) {
+    throw new UnauthorizedException('User not found.')
+  }
+
+  // 3. Generate a new pair of tokens
+  return generateAuthTokens(user)
+}
+
+/**
  * Handles the "forgot password" request.
  * @param email The user's email address.
  */

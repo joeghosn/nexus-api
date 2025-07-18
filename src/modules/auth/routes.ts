@@ -19,12 +19,18 @@ import {
   sendVerificationController,
   meController,
   verifyEmailController,
+  refreshController,
 } from './controllers'
 
 const router = Router()
 
 router.post('/register', validate.body(registerSchema), registerController)
 router.post('/login', validate.body(loginSchema), loginController)
+
+// @route   POST /api/auth/refresh
+// @desc    Get a new access token using a refresh token
+// @access  Public (uses refresh token cookie)
+router.post('/refresh', refreshController)
 
 // @route   POST /api/auth/forgot-password
 // @desc    User requests a password reset link

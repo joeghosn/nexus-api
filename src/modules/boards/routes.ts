@@ -1,10 +1,15 @@
 import { Router } from 'express'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
-import { hasWorkspaceRole } from '@/middleware/validate-workspace-access'
 
 import validate from '@/middleware/validate.middleware'
-import { addBoardMemberSchema, boardSchema } from './schema'
+import {
+  addBoardMemberSchema,
+  boardSchema,
+  validateBoardMemberParams,
+  validateBoardParams,
+  validateWorkspaceParams,
+} from './schema'
 import {
   addMemberToBoardController,
   createBoardController,
@@ -14,6 +19,8 @@ import {
   removeMemberFromBoardController,
   updateBoardController,
 } from './controllers'
+import { validateWorkspaceAccess } from '@/middleware/validate-workspace-access'
+import listRoutes from '../lists/routes'
 
 const router = Router({ mergeParams: true })
 
@@ -27,7 +34,8 @@ router.use(authMiddleware)
 // @access  Authenticated (Admin or Owner)
 router.post(
   '/',
-  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.params(validateWorkspaceParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(boardSchema),
   createBoardController,
 )
@@ -37,7 +45,8 @@ router.post(
 // @access  Authenticated (Any Member)
 router.get(
   '/',
-  hasWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER']),
+  validate.params(validateWorkspaceParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN', 'MEMBER']),
   getBoardsInWorkspaceController,
 )
 
@@ -46,7 +55,8 @@ router.get(
 // @access  Authenticated (Any Member with access)
 router.get(
   '/:boardId',
-  hasWorkspaceRole(['OWNER', 'ADMIN', 'MEMBER']),
+  validate.params(validateBoardParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN', 'MEMBER']),
   getBoardByIdController,
 )
 
@@ -55,7 +65,8 @@ router.get(
 // @access  Authenticated (Admin or Owner)
 router.patch(
   '/:boardId',
-  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.params(validateBoardParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(boardSchema),
   updateBoardController,
 )
@@ -65,29 +76,28 @@ router.patch(
 // @access  Authenticated (Admin or Owner)
 router.delete(
   '/:boardId',
-  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.params(validateBoardParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   deleteBoardController,
 )
 
 // --- Private Board Member Management Routes ---
 
-// @route   POST /api/workspaces/:workspaceId/boards/:boardId/members
-// @desc    Add a workspace member to a private board
-// @access  Authenticated (Admin or Owner)
 router.post(
   '/:boardId/members',
-  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.params(validateBoardParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(addBoardMemberSchema),
   addMemberToBoardController,
 )
 
-// @route   DELETE /api/workspaces/:workspaceId/boards/:boardId/members/:userId
-// @desc    Remove a member's access from a private board
-// @access  Authenticated (Admin or Owner)
 router.delete(
   '/:boardId/members/:userId',
-  hasWorkspaceRole(['OWNER', 'ADMIN']),
+  validate.params(validateBoardMemberParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   removeMemberFromBoardController,
 )
+
+router.use('/:boardId/lists', listRoutes)
 
 export default router

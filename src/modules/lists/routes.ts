@@ -1,9 +1,9 @@
 import { Router } from 'express'
-import * as listController from './list.controller'
-
 import { authMiddleware } from '@/middleware/auth.middleware'
+import { validateWorkspaceAccess } from '@/middleware/validate-workspace-access'
 import validate from '@/middleware/validate.middleware'
-import { reorderListSchema } from './schema'
+import { reorderListSchema, validateListParams } from './schema'
+import { reorderListsController } from './controllers'
 
 const router = Router({ mergeParams: true })
 
@@ -11,11 +11,13 @@ router.use(authMiddleware)
 
 // @route   PATCH /api/boards/:boardId/lists/reorder
 // @desc    Updates the position of multiple lists on a board
-// @access  Authenticated
+// @access  Authenticated (Admin or Owner of workspace)
 router.patch(
   '/reorder',
+  validate.params(validateListParams),
+  validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(reorderListSchema),
-  listController.reorderLists,
+  reorderListsController,
 )
 
 export default router

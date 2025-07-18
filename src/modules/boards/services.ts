@@ -1,37 +1,35 @@
 import { prisma } from '@/lib/prisma/client'
-
+import { BoardData } from './schema'
 import { NotFoundException } from '@/exceptions/not-found.exception'
 import { ForbiddenException } from '@/exceptions/forbidden.exception'
 import { AccessTokenPayload } from '@/types/auth.types'
-import { BoardData } from './schema'
 import { ConflictException } from '@/exceptions'
+import { Membership } from '@prisma/client'
 
 /**
  * Creates a new board and its default lists.
  * @param workspaceId The ID of the parent workspace.
- * @param boardData The name for the new board.
+ * @param boardData The name and visibility for the new board.
  * @returns The newly created board.
  */
 export const createBoard = async (
   workspaceId: string,
   boardData: BoardData,
 ) => {
-  // Use a transaction to ensure the board and its lists are created together
   const newBoard = await prisma.$transaction(async (tx) => {
     const board = await tx.board.create({
       data: {
         name: boardData.name,
         workspaceId,
+        visibility: boardData.visibility,
       },
     })
 
-    // Create default lists for the new board
     await tx.list.createMany({
       data: [
         { name: 'To Do', boardId: board.id, position: 1 },
         { name: 'In Progress', boardId: board.id, position: 2 },
-        { name: 'In Review', boardId: board.id, position: 3 },
-        { name: 'Done', boardId: board.id, position: 4 },
+        { name: 'Done', boardId: board.id, position: 3 },
       ],
     })
 
@@ -43,38 +41,38 @@ export const createBoard = async (
 
 /**
  * Fetches all boards in a workspace that a specific user has access to.
- * This includes all public boards and any private boards they are a member of.
+ * Admins/Owners see all boards. Members see public boards + private boards they are part of.
  * @param workspaceId The ID of the workspace.
- * @param userId The ID of the user making the request.
+ * @param user The authenticated user payload.
  * @returns A list of accessible boards.
  */
 export const getBoardsInWorkspace = async (
   workspaceId: string,
-  userId: string,
+  user: AccessTokenPayload,
+  membership: Membership,
 ) => {
-  const boards = await prisma.board.findMany({
+  // If user is an ADMIN or OWNER, they get to see all boards.
+  if (membership.role === 'ADMIN' || membership.role === 'OWNER') {
+    return await prisma.board.findMany({ where: { workspaceId } })
+  }
+
+  // Otherwise, the user is a MEMBER. They see public boards + private ones they're in.
+  return await prisma.board.findMany({
     where: {
       workspaceId,
       OR: [
-        // Condition 1: The board is public
         { visibility: 'PUBLIC' },
-        // Condition 2: The board is private AND the user is a member of it
         {
           visibility: 'PRIVATE',
-          members: {
-            some: {
-              userId,
-            },
-          },
+          members: { some: { userId: user.id } },
         },
       ],
     },
   })
-  return boards
 }
 
 /**
- * Fetches a single board and verifies the user's access.
+ * Fetches a single board and verifies the user's access based on their role.
  * @param boardId The ID of the board to fetch.
  * @param user The authenticated user payload from the JWT.
  * @returns The full board details including lists and cards.
@@ -82,6 +80,7 @@ export const getBoardsInWorkspace = async (
 export const getBoardForUser = async (
   boardId: string,
   user: AccessTokenPayload,
+  membership: Membership,
 ) => {
   const board = await prisma.board.findUnique({
     where: { id: boardId },
@@ -101,8 +100,12 @@ export const getBoardForUser = async (
     throw new NotFoundException('Board not found.')
   }
 
-  // The `hasWorkspaceRole` middleware already confirmed the user is in the workspace.
-  // Now, we just need to do the final check for private boards.
+  // If user is ADMIN or OWNER, they can always access the board.
+  if (membership.role === 'ADMIN' || membership.role === 'OWNER') {
+    return board
+  }
+
+  // If the user is a MEMBER, we do an additional check for private boards.
   if (board.visibility === 'PRIVATE') {
     const boardMembership = await prisma.boardMember.findUnique({
       where: {
@@ -126,9 +129,10 @@ export const getBoardForUser = async (
  * Updates a board's name and/or visibility.
  * @param boardId The ID of the board to update.
  * @param boardData The new data for the board.
- * @returns The updated board.
  */
 export const updateBoard = async (boardId: string, boardData: BoardData) => {
+  // The middleware has already confirmed the user is an ADMIN or OWNER,
+  // and that the workspace exists. We just need to find the board.
   const existingBoard = await prisma.board.findUnique({
     where: { id: boardId },
   })
@@ -136,12 +140,10 @@ export const updateBoard = async (boardId: string, boardData: BoardData) => {
     throw new NotFoundException('Board not found.')
   }
 
-  const updatedBoard = await prisma.board.update({
+  return await prisma.board.update({
     where: { id: boardId },
     data: boardData,
   })
-
-  return updatedBoard
 }
 
 /**
@@ -149,6 +151,8 @@ export const updateBoard = async (boardId: string, boardData: BoardData) => {
  * @param boardId The ID of the board to delete.
  */
 export const deleteBoard = async (boardId: string) => {
+  // The middleware has already confirmed the user is an OWNER,
+  // and that the workspace exists. We just need to find the board.
   const existingBoard = await prisma.board.findUnique({
     where: { id: boardId },
   })
@@ -156,14 +160,18 @@ export const deleteBoard = async (boardId: string) => {
     throw new NotFoundException('Board not found.')
   }
 
-  // The `onDelete: Cascade` in the schema will handle deleting related data
   await prisma.board.delete({
     where: { id: boardId },
   })
 }
 
+/**
+ * Adds a workspace member to a private board.
+ * @param boardId The ID of the private board.
+ * @param userId The ID of the user to add.
+ * @returns The new board membership record.
+ */
 export const addMemberToBoard = async (boardId: string, userId: string) => {
-  // Use a transaction to perform multiple checks and the final creation
   return await prisma.$transaction(async (tx) => {
     // 1. Find the board and include its parent workspace ID
     const board = await tx.board.findUnique({
@@ -178,7 +186,7 @@ export const addMemberToBoard = async (boardId: string, userId: string) => {
     // 2. Ensure the board is actually private
     if (board.visibility !== 'PRIVATE') {
       throw new ForbiddenException(
-        'This board is public; all workspace members have access.',
+        'This board is public; all workspace members already have access.',
       )
     }
 

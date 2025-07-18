@@ -2,7 +2,7 @@ import { Router } from 'express'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
 import validate from '@/middleware/validate.middleware'
-import { workspaceSchema } from './schema'
+import { validateWorkspaceParams, workspaceSchema } from './schema'
 import {
   createWorkspaceController,
   deleteWorkspaceController,
@@ -34,6 +34,7 @@ router.get('/', getUserWorkspacesController)
 // @access  Authenticated (Any member of the workspace)
 router.get(
   '/:workspaceId',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN', 'MEMBER']),
   getWorkspaceByIdController,
 )
@@ -43,6 +44,7 @@ router.get(
 // @access  Authenticated (Admin or Owner of the workspace)
 router.patch(
   '/:workspaceId',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(workspaceSchema),
   updateWorkspaceController,
@@ -53,6 +55,7 @@ router.patch(
 // @access  Authenticated (Owner of the workspace only)
 router.delete(
   '/:workspaceId',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER']),
   deleteWorkspaceController,
 )

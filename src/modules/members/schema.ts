@@ -13,5 +13,13 @@ export const updateMemberRoleSchema = z
   })
   .strict()
 
+export const validateMemberParams = z
+  .object({
+    workspaceId: z.uuid(),
+    memebershipId: z.uuid(),
+  })
+  .strict()
+
 export type CreateInviteData = z.infer<typeof createInviteSchema>
 export type UpdateMemberRoleData = z.infer<typeof updateMemberRoleSchema>
+export type ValidateMemberParams = z.infer<typeof validateMemberParams>

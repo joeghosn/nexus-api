@@ -13,6 +13,8 @@ import workspaceRoutes from '@/modules/workspaces/routes'
 import boardRoutes from '@/modules/boards/routes'
 import memberRoutes from '@/modules/members/routes'
 import userRoutes from '@/modules/users/routes'
+import inviteRoutes from '@/modules/invites/routes'
+import metaRoutes from '@/modules/meta/routes'
 
 // import { metaRoutes } from '@/modules/meta'
 
@@ -83,12 +85,13 @@ app.get('/', (req, res) => {
 })
 
 // API Routes
+app.use('/api/meta', metaRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/workspaces', workspaceRoutes)
 workspaceRoutes.use('/:workspaceId/members', memberRoutes)
+app.use('/api/invites', inviteRoutes)
 workspaceRoutes.use('/:workspaceId/boards', boardRoutes)
-// app.use('/api/meta', metaRoutes)
 
 app.use(errorHandler)
 

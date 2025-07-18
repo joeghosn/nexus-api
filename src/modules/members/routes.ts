@@ -1,7 +1,11 @@
 import { Router } from 'express'
 
 import { authMiddleware } from '@/middleware/auth.middleware'
-import { createInviteSchema, updateMemberRoleSchema } from './schema'
+import {
+  createInviteSchema,
+  updateMemberRoleSchema,
+  validateMemberParams,
+} from './schema'
 import validate from '@/middleware/validate.middleware'
 import {
   getPendingInvitesController,
@@ -11,6 +15,7 @@ import {
   updateMemberRoleController,
 } from './controllers'
 import { validateWorkspaceAccess } from '@/middleware/validate-workspace-access'
+import { validateWorkspaceParams } from '../workspaces/schema'
 
 // The { mergeParams: true } option is crucial for accessing :workspaceId from the parent router
 const router = Router({ mergeParams: true })
@@ -25,6 +30,7 @@ router.use(authMiddleware)
 // @access  Authenticated (Admin or Owner)
 router.post(
   '/invite',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(createInviteSchema),
   inviteMemberController,
@@ -35,6 +41,7 @@ router.post(
 // @access  Authenticated (Admin or Owner)
 router.get(
   '/invites',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN']),
   getPendingInvitesController,
 )
@@ -44,6 +51,7 @@ router.get(
 // @access  Authenticated (Any Member)
 router.get(
   '/',
+  validate.params(validateWorkspaceParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN', 'MEMBER']),
   getWorkspaceMembersController,
 )
@@ -53,6 +61,7 @@ router.get(
 // @access  Authenticated (Admin or Owner)
 router.patch(
   '/:membershipId',
+  validate.params(validateMemberParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN']),
   validate.body(updateMemberRoleSchema),
   updateMemberRoleController,
@@ -63,6 +72,7 @@ router.patch(
 // @access  Authenticated (Admin or Owner)
 router.delete(
   '/:membershipId',
+  validate.params(validateMemberParams),
   validateWorkspaceAccess(['OWNER', 'ADMIN']),
   removeMemberController,
 )

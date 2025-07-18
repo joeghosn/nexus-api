@@ -5,11 +5,13 @@ import { AccessTokenPayload } from '@/types/auth.types'
 import { AddBoardMemberData, BoardData } from './schema'
 import {
   addMemberToBoard,
+  // addMemberToBoard,
   createBoard,
   deleteBoard,
   getBoardForUser,
   getBoardsInWorkspace,
   removeMemberFromBoard,
+  // removeMemberFromBoard,
   updateBoard,
 } from './services'
 
@@ -44,7 +46,11 @@ export const getBoardsInWorkspaceController = asyncHandler(
     const { workspaceId } = req.params
     const user = req.user as AccessTokenPayload
 
-    const boards = await getBoardsInWorkspace(workspaceId, user.id)
+    const boards = await getBoardsInWorkspace(
+      workspaceId,
+      req.user!,
+      req.membership!,
+    )
 
     res.status(200).json({
       status: 'success',
@@ -66,7 +72,7 @@ export const getBoardByIdController = asyncHandler(
     const user = req.user as AccessTokenPayload
 
     // The service layer will handle the complex authorization for private boards
-    const board = await getBoardForUser(boardId, user)
+    const board = await getBoardForUser(boardId, user, req.membership!)
 
     res.status(200).json({
       status: 'success',

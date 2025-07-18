@@ -8,4 +8,11 @@ export const workspaceSchema = z
   })
   .strict()
 
+export const validateWorkspaceParams = z
+  .object({
+    workspaceId: z.uuid(),
+  })
+  .strict()
+
 export type WorkspaceData = z.infer<typeof workspaceSchema>
+export type WorkspaceParams = z.infer<typeof validateWorkspaceParams>
